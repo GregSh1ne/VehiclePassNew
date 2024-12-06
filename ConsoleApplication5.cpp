@@ -5,34 +5,35 @@
 #include <iomanip>
 #include <stdexcept>
 #include <regex>
+#include <vector>
+#include <algorithm>
 
 using namespace std;
 
 class VehiclePass
 {
 public:
-    // Конструктор класса, принимающий дату и номер автомобиля
     VehiclePass(const string& date, const string& carNumber)
         : date(date), carNumber(carNumber) {}
 
-    // Метод для отображения информации об объекте
     void display() const
     {
         cout << date << " " << carNumber << endl;
     }
 
-    // Метод для получения строки с информацией об объекте
     string toString() const
     {
         return date + " " + carNumber;
     }
+
+    string getDate() const { return date; }
+    string getCarNumber() const { return carNumber; }
 
 private:
     string date;      // Дата в формате гггг.мм.дд
     string carNumber; // Номер автомобиля формата в формате [1 буква][001-999][2 Буква][00-999]
 };
 
-// Функция для удаления лишних пробелов в начале и конце строки
 string trim(const string& str)
 {
     size_t first = str.find_first_not_of(' ');
@@ -52,7 +53,6 @@ bool isValidDate(const string& date)
     return regex_match(date, pattern);
 }
 
-// Функция для разбора входной строки и создания объекта VehiclePass
 VehiclePass parseInput(const string& input)
 {
     istringstream stream(trim(input));
@@ -60,7 +60,6 @@ VehiclePass parseInput(const string& input)
 
     stream >> part1 >> part2;
 
-    // Проверяем, какая часть является датой, а какая номером автомобиля
     string date = isValidDate(part1) ? part1 : part2;
     string carNumber = isValidCarNumber(part1) ? part1 : part2;
 
@@ -70,12 +69,8 @@ VehiclePass parseInput(const string& input)
     }
 
     return VehiclePass(date, carNumber);
-
-    //string date = isValidDate(part1) ? part1 : (isValidDate(part2) ? part2 : part3);
-    //string carNumber = isValidCarNumber(part1) ? part1 : (isValidCarNumber(part2) ? part2 : part3);
 }
 
-// Функция для записи данных в файл
 void saveToFile(const VehiclePass& vehiclePass, const string& filename)
 {
     ofstream outputFile(filename, ios::app);
@@ -88,12 +83,48 @@ void saveToFile(const VehiclePass& vehiclePass, const string& filename)
     outputFile.close();
 }
 
+bool compareByDate(const VehiclePass& a, const VehiclePass& b)
+{
+    return a.getDate() > b.getDate();
+}
+
+void sortedDate(vector<VehiclePass> passes)
+{
+    sort(passes.begin(), passes.end(), compareByDate);
+
+    cout << endl << "Отсортированные данные по датам:" << endl;
+    for (const auto& pass : passes)
+    {
+        pass.display();
+    }
+}
+
+void findCar(vector<VehiclePass> passes, string carNumber)
+{
+    cout << "Результаты поиска для номера машины " << carNumber << ":" << endl;
+    bool found = false;
+    for (const auto& pass : passes)
+    {
+        if (pass.getCarNumber() == carNumber)
+        {
+            pass.display();
+            found = true;
+        }
+    }
+
+    if (!found)
+    {
+        cout << "Номер машины не найден." << endl;
+    }
+}
+
 int main()
 {
     setlocale(0, "");
 
     string line;
     ifstream inputFile("Pass.txt");
+    vector<VehiclePass> vehiclePasses;
 
     if (!inputFile.is_open())
     {
@@ -105,20 +136,52 @@ int main()
     {
         try
         {
-            // Парсим входную строку и создаем объект VehiclePass
             VehiclePass vehiclePass = parseInput(line);
             vehiclePass.display();
-            saveToFile(vehiclePass, "OutputPass.txt");
+            vehiclePasses.push_back(vehiclePass);
         }
         catch (const exception& e)
         {
-            // Обрабатываем возможные исключения и выводим сообщение об ошибке
             cerr << "Ошибка: " << e.what() << endl;
         }
     }
 
     inputFile.close();
 
+    cout << endl << "Отсортировать данные? [0/1]" << endl;
+
+    int choice1, choice2;
+    cin >> choice1;
+
+    switch (choice1)
+    {
+    case 1:
+
+        sortedDate(vehiclePasses);
+
+    default:
+        break;
+    }
+
+
+    cout << endl << "Найти автомобиль по номеру? [0/1]" << endl;
+
+    cin >> choice2;
+
+    switch (choice2)
+    {
+    case 1: // Поиск по номеру машины
+    {
+        string searchCarNumber;
+        cout << "Введите номер машины для поиска: ";
+        cin >> searchCarNumber;
+
+        findCar(vehiclePasses, searchCarNumber);
+    }
+
+    default:
+        break;
+    }
+
     return 0;
 }
-
